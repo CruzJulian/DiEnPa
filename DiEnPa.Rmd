@@ -1,0 +1,134 @@
+---
+title: "Distancias entre países"
+author: "Nebulae"
+runtime: shiny
+output: html_document
+---
+
+# Datos
+
+Se obtienen los datos del IDH 2014. El Índice de Desarrollo Humano es calculado con el fin de realizar un ranking de los países. Sin embargo en este caso el objetivo es encontrar distancias entre los países a partir de los datos multivariados. Con esto esperamos crear mapas de similaridades, que nos muestren dónde estamos ubicados. El siguiente código obtiene los datos.
+
+```{r}
+library("xlsx")
+library("colmaps")
+library("ggplot2")
+library("maps")
+library("dplyr")
+library("magrittr")
+library("curl")
+library("rworldmap")
+library("knitr")
+
+
+opts_chunk$set(echo = TRUE, include = TRUE, eval = TRUE, cache = TRUE, fig.width = 7, fig.align = "center")
+
+```
+
+
+```{r}
+carpeta <- "~/Documentos/Investigaciones/IDH"
+setwd(carpeta)
+
+filename <- "HDI_2014.xls"
+
+downloaded.path <- file.path(carpeta, filename)
+
+#origin <- "https://data.undp.org/api/views/5tuc-d2a9/rows.csv?accessType=DOWNLOAD"
+origin <- "http://hdr.undp.org/sites/default/files/composite_tables/2015_Statistical_Annex_Table_1.xls"
+
+curl_download(origin, downloaded.path)
+
+#HDI_2014 <- read.table(downloaded.path, sep = ",", dec = ".", header = TRUE, quote = "\"", na.strings = "..")
+
+# Código quemado, falta estandarizar
+
+downloaded.path %>% read.xlsx(sheetIndex = 1) %>%
+  setNames(LETTERS[1:ncol(.)]) -> HDI_2014_tmp
+
+rows <- c(1, which(!is.na(HDI_2014_tmp$A)))[-c(2, 3, 4, 5)]
+cols <- c(2, 3, 5, 7, 9, 11)
+
+downloaded.path %>% read.xlsx(sheetIndex = 1, rowIndex = rows, colIndex = cols,
+          header = TRUE) %>% 
+  setNames( c("País", 
+              "IDH",
+           "Expectativa_de_vida_al_nacer", 
+           "Escoaridad_esperada", 
+           "Escolaridad_media", 
+           "GNI_per_capita")) -> HDI_2014
+
+rm(carpeta, downloaded.path, filename, origin, HDI_2014_tmp)
+
+```
+
+
+## Mapa IDH
+
+```{r}
+world.map <- joinCountryData2Map(HDI_2014, joinCode = "NAME", nameJoinColumn = "País")
+
+colmap(world.map, world.map@data, var ="IDH", map_id = "ADMIN") 
+
+```
+
+
+# Preprocesamiento
+
+Para obtener la matriz de distancias que estamos buscando seguimos dos pasos: primero retiramos las dimensiones que tengan más del 10% de datos perdidos; luego normalizamos los datos para que todos queden en el intervalo [0,1]. Dado que todas las variables son numéricas no es necesario ningún otro proceso.
+
+
+```{r}
+normalization.rule <- function(x){
+  Min <- min(x, na.rm = TRUE)
+  Max <- max(x, na.rm = TRUE)
+  "if"(Max == Min,1,(x-Min)/(Max - Min))
+  }
+
+world.map@data %$% data.frame(ISO3, ADMIN, País, Expectativa_de_vida_al_nacer, Escoaridad_esperada, Escolaridad_media, GNI_per_capita) -> HDI_2014
+
+# HDI_2014 %>% 
+#   sapply(function(x){sum(is.na(x))}) %>% ">"(20) %>% not -> temp1
+
+HDI_2014 %>% 
+ apply(1, function(x){mean(is.na(x))<0.2}) -> temp1
+
+HDI_2014 %>% 
+sapply(is.numeric) -> temp2
+
+HDI_2014 %>% "["(temp1, temp2) %>% 
+  lapply(normalization.rule) %>% as.data.frame-> HDI_WORK
+
+HDI_2014 %>% filter(temp1) %$% ISO3-> rownames(HDI_WORK)
+
+HDI_2014 %>% filter(temp1) %$% data.frame(ISO3, ADMIN, País) -> nombre_codigo
+
+```
+
+## Distancias
+
+Obtenemos las distancias euclidianas entre países.
+
+```{r}
+HDI_WORK %>% dist %>% as.matrix %>% as.data.frame %>% 
+  mutate(nombre = nombre_codigo$País, ADMIN = nombre_codigo$ADMIN) -> distances
+
+```
+
+## Mapas
+
+Realizamos un mapa por cada país, en él se muestran los países más cercanos y los más lejanos usando colores. 
+
+```{r eruptions, cache = FALSE}
+inputPanel(
+  selectInput("País", label = "País",
+              choices = as.character(nombre_codigo$País))
+)
+
+renderPlot({
+  #mapCountryData(world.map, nameColumnToPlot = input$País)
+colmap(world.map, distances, var = as.character(nombre_codigo$ISO3[nombre_codigo$País == input$País]), map_id = "ADMIN", autocomplete = TRUE) + scale_fill_continuous(high = "#fee8c8", low = "#b30000")
+  })
+
+```
+
