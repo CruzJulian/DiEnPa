@@ -73,9 +73,7 @@ colmap(world.map, world.map@data, var ="IDH", map_id = "ADMIN")
 ```
 
 
-# Preprocesamiento
-
-Para obtener la matriz de distancias que estamos buscando seguimos dos pasos: primero retiramos las dimensiones que tengan más del 10% de datos perdidos; luego normalizamos los datos para que todos queden en el intervalo [0,1]. Dado que todas las variables son numéricas no es necesario ningún otro proceso.
+# Preparación
 
 
 ```{r}
