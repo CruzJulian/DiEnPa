@@ -5,6 +5,10 @@ runtime: shiny
 output: html_document
 ---
 
+# Introducción
+
+El Indice de Desarrollo Humano ha sido entendido como....sin embargo
+
 # Datos
 
 Se obtienen los datos del IDH 2014. El Índice de Desarrollo Humano es calculado con el fin de realizar un ranking de los países. Sin embargo en este caso el objetivo es encontrar distancias entre los países a partir de los datos multivariados. Con esto esperamos crear mapas de similaridades, que nos muestren dónde estamos ubicados. El siguiente código obtiene los datos.
