@@ -113,60 +113,6 @@ HDI_WORK %>% dist %>% as.matrix %>% as.data.frame %>%
 
 ```
 
-
-# intentémoslo con WHO
-
-# Datos
-
-Se obtienen los datos de WHO.
-
-```{r, eval = FALSE}
-filename <- "WHO.csv"
-
-downloaded.path <- file.path(getwd(), filename)
-
-origin <- "http://www.exploredata.net/ftp/WHO.csv"
-
-curl_download(origin, downloaded.path)
-
-WHO <- read.table(downloaded.path, sep = ",", dec = ".", header = TRUE, quote = "\"", na.strings = "..")
-
-rm(carpeta, downloaded.path, filename, origin)
-
-```
-
-# Preprocesamiento
-
-Para obtener la matriz de distancias que estamos buscando seguimos dos pasos: primero retiramos las dimensiones que tengan más del 10% de datos perdidos; luego normalizamos los datos para que todos queden en el intervalo [0,1]. Dado que todas las variables son numéricas no es necesario ningún otro proceso.
-
-```{r, eval=FALSE}
-
-WHO %>% 
-  sapply(function(x){sum(is.na(x))}) %>% ">"(20) %>% not -> temp1
-
-WHO %>% 
-sapply(is.numeric) -> temp2
-
-(temp1 & temp2) %>% which -> cuales
-
-WHO %>% select(cuales) %>% 
-  lapply(normalization.rule) %>% as.data.frame-> WHO_WORK
-
-WHO %$% Country -> rownames(WHO_WORK)
-
-rm(temp1, temp2, cuales)
-```
-
-## Distancias
-
-Obtenemos las distancias euclidianas entre países.
-
-```{r, eval=FALSE}
-dist(WHO_WORK) %>% as.matrix %>% as.data.frame %>% 
-  mutate(Countries = rownames(WHO_WORK)) -> distances
-```
-
-
 ## Mapas
 
 Realizamos un mapa por cada país, en él se muestran los países más cercanos y los más lejanos usando colores. 
