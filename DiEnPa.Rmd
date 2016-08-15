@@ -69,7 +69,7 @@ rm(downloaded.path, filename, origin, HDI_2014_tmp, cols, rows)
 ```{r}
 world.map <- joinCountryData2Map(HDI_2014, joinCode = "NAME", nameJoinColumn = "Nombre")
 
-colmap(world.map, world.map@data, var ="IDH", map_id = "ADMIN") 
+colmap(world.map, world.map@data, var ="IDH", map_id = "ADMIN") + scale_fill_continuous(high = "#fee8c8", low = "#b30000")
 
 ```
 
