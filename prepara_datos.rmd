@@ -1,0 +1,106 @@
+---
+title: "Preparación"
+author: "Julián Cruz, Ana Gómez"
+output: html_document
+---
+
+Este es el proceso de preparación de los datos
+
+```{r}
+library("tsne")
+library("dplyr")
+library("magrittr")
+library("xlsx")
+library("maps")
+library("rworldmap")
+
+```
+
+
+```{r}
+filename <- "HDI_2014.xls"
+
+downloaded.path <- file.path(getwd(), filename)
+
+#origin <- "https://data.undp.org/api/views/5tuc-d2a9/rows.csv?accessType=DOWNLOAD"
+origin <- "http://hdr.undp.org/sites/default/files/composite_tables/2015_Statistical_Annex_Table_1.xls"
+
+if(!any(filename %in% dir())){curl_download(origin, downloaded.path)}
+
+#HDI_2014 <- read.table(downloaded.path, sep = ",", dec = ".", header = TRUE, quote = "\"", na.strings = "..")
+
+# Código quemado, falta estandarizar
+
+downloaded.path %>% read.xlsx(sheetIndex = 1) %>%
+  setNames(LETTERS[1:ncol(.)]) -> HDI_2014_tmp
+
+rows <- c(1, which(!is.na(HDI_2014_tmp$A)))[-c(2, 3, 4, 5)]
+cols <- c(2, 3, 5, 7, 9, 11)
+
+downloaded.path %>% read.xlsx(sheetIndex = 1, rowIndex = rows, colIndex = cols,
+          header = TRUE) %>% 
+  setNames( c("Nombre", 
+              "IDH",
+           "Expectativa_de_vida_al_nacer", 
+           "Escoaridad_esperada", 
+           "Escolaridad_media", 
+           "GNI_per_capita")) -> HDI_2014
+```
+
+# Preparación
+
+```{r}
+normalization.rule <- function(x){
+  Min <- min(x, na.rm = TRUE)
+  Max <- max(x, na.rm = TRUE)
+  "if"(Max == Min,1,(x-Min)/(Max - Min))
+  }
+
+world.map <- joinCountryData2Map(HDI_2014, joinCode = "NAME", nameJoinColumn = "Nombre")
+
+world.map@data %$% data.frame(ISO3, ADMIN, Nombre, Expectativa_de_vida_al_nacer, Escoaridad_esperada, Escolaridad_media, GNI_per_capita) -> HDI_2014
+
+# HDI_2014 %>% 
+#   sapply(function(x){sum(is.na(x))}) %>% ">"(20) %>% not -> temp1
+
+HDI_2014 %>% 
+ apply(1, function(x){mean(is.na(x))<0.2}) -> temp1
+
+HDI_2014 %>% 
+sapply(is.numeric) -> temp2
+
+HDI_2014 %>% "["(temp1, temp2) %>% 
+  lapply(normalization.rule) %>% as.data.frame-> HDI_WORK
+
+HDI_2014 %>% filter(temp1) %$% ISO3 -> rownames(HDI_WORK)
+
+HDI_2014 %>% filter(temp1) %$% data.frame(ISO3, ADMIN, Nombre) -> nombre_codigo
+
+```
+
+## Distancias
+
+Obtenemos las distancias euclidianas entre países.
+
+```{r}
+HDI_WORK %>% dist %>% as.matrix -> dis_mat
+dis_mat %>% as.data.frame %>% 
+  mutate(nombre = as.character(nombre_codigo$Nombre), ADMIN = as.character(nombre_codigo$ADMIN)) -> distances
+
+```
+
+¿hacemos un tsne?
+
+```{r, include = FALSE}
+
+dis_mat %>% tsne -> tsne_paises
+
+tsne_paises %>% plot
+
+
+```
+
+```{r}
+save(list = ls(), file = "work_space.rda", envir = globalenv())
+
+```
