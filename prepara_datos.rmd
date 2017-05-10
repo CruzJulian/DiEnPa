@@ -69,8 +69,10 @@ HDI_2014 %>%
 HDI_2014 %>% 
 sapply(is.numeric) -> temp2
 
-HDI_2014 %>% "["(temp1, temp2) %>% 
-  lapply(normalization.rule) %>% as.data.frame-> HDI_WORK
+# HDI_2014 %>% "["(temp1, temp2) %>% 
+#   lapply(normalization.rule) %>% as.data.frame-> HDI_WORK
+
+HDI_2014 %>% "["(temp1, temp2) -> HDI_WORK
 
 HDI_2014 %>% filter(temp1) %$% ISO3 -> rownames(HDI_WORK)
 
@@ -82,8 +84,20 @@ HDI_2014 %>% filter(temp1) %$% data.frame(ISO3, ADMIN, Nombre) -> nombre_codigo
 
 Obtenemos las distancias euclidianas entre países.
 
-```{r}
+```{r, eval=FALSE}
 HDI_WORK %>% dist %>% as.matrix -> dis_mat
+
+dis_mat %>% as.data.frame %>% 
+  mutate(nombre = as.character(nombre_codigo$Nombre), ADMIN = as.character(nombre_codigo$ADMIN)) -> distances
+
+```
+
+```{r mahalanobis}
+HDI_WORK %>% cov -> covarianzas
+HDI_WORK %>% apply(2, mean) -> medias
+
+apply(HDI_WORK, 1, function(pais){mahalanobis(HDI_WORK, pais, covarianzas)}) -> dis_mat
+
 dis_mat %>% as.data.frame %>% 
   mutate(nombre = as.character(nombre_codigo$Nombre), ADMIN = as.character(nombre_codigo$ADMIN)) -> distances
 
