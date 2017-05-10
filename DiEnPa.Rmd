@@ -34,6 +34,7 @@ library("dplyr")
 library("magrittr")
 library("curl")
 library("knitr")
+library("plotly")
 
 opts_chunk$set(echo = TRUE, include = TRUE, eval = TRUE, cache = FALSE, fig.width = 7, fig.align = "center")
 
@@ -55,7 +56,9 @@ colmap(world.map, world.map@data, var ="IDH", map_id = "ADMIN") + scale_fill_con
 ## t-SNE
 
 ```{r, fig.width=10, fig.height=8}
-tsne_paises %>% set_colnames(c("xx", "yy")) %>% cbind(nombre_codigo) %>% ggplot + geom_text(mapping = aes(x = xx, y = yy, label = Nombre), size = 3) + theme_minimal()
+tsne_paises %>% set_colnames(c("xx", "yy")) %>% cbind(nombre_codigo) %>% ggplot + geom_text(mapping = aes(x = xx, y = yy, label = Nombre), size = 3) + theme_minimal() > tsne_plot
+
+ggplotly(tsne_plot)
 
 ```
 
