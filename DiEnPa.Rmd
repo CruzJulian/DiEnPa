@@ -3,6 +3,10 @@ title: "Distancias entre países"
 author: "Julián Cruz, Ana Gómez"
 runtime: shiny
 output: html_document
+bibliography: biblio.bib
+csl: apa.csl
+nocite: |
+  @pnud2010, @SA, @VetF, @SalMar, @sousasantos2005
 ---
 
 # Resumen
@@ -21,9 +25,54 @@ La metodología consiste tomar los datos que publica el PNUD, estandarizar los i
 
 # Introducción
 
-El Indice de Desarrollo Humano ha sido entendido como....sin embargo
+El Índice de Desarrollo Humano (IDH) es un indicador compuesto, diseñado por el Programa de las Naciones Unidas para el Desarrollo (PNUD) con el propósito de hacer seguimiento a los avances en el desarrollo de los países y, a su vez, ofrecer información útil en el diseño de políticas públicas específicas. Desde la publicación del primer Informe sobre Desarrollo Humano de 1990 el IDH es referencia mundial en la divulgación de la situación particular, en clave de desarrollo, de cada país y punto de partida en el establecimiento de clasificaciones. 
 
-# Datos
+Por el papel que desempeña este indicador, por ejemplo, en los estudios sobre calidad de vida, equidad y justicia social a diversas escalas, el PNUD ha realizado grandes esfuerzos por mejorar su calidad tanto para reflejar las condiciones de vida de la población, como para evidenciar los avances, estancamientos o retrocesos de las sociedades en relación con dichas condiciones. En el Informe sobre Desarrollo Humano correspondiente al año 2010 se publicó, por una parte, el IDH calculado a partir de nuevos indicadores para abordar lo relativo a educación e ingresos y, por otra, el denominado IDH Ajustado por la Desigualdad (IDH-D), en que se valoran las desigualdades existentes en cada una de las dimensiones que conforman el índice original. 
+
+A la fecha el IDH tiene en cuenta tres dimensiones: salud, educación e ingresos; y bajo criterios específicos, se intenta una aproximación al carácter multidimensional del desarrollo a través de  creación de capacidades, oportunidades y opciones: años promedio de educación, años esperados de educación, esperanza de vida al nacer e ingreso nacional bruto per cápita.  Sin embargo, distintos estudios sobre desarrollo han logrado visibilizar que dicho concepto trasciende los factores mencionados. 
+
+# Marco teórico
+
+## El desarrollo humano de cara al desarrollo 
+
+En los ochentas Max Neef y Amartya Sen, empiezan a dinamizar el concepto de desarrollo al referir a un proceso de expansión de las libertades individuales en clave de aspiraciones. Así, el individuo es el centro, y también el beneficiario último, del desarrollo. Es decir que el crecimiento económico de los países o territorios deja de ser el fin último, y la calidad de vida y la construcción de entornos favorables al logro de objetivos individuales y colectivos se posicionan como propósitos. 
+
+Siguiendo la línea descrita hacia finales de la década surge el concepto de desarrollo humano definido como “el proceso de ampliación del abanico de oportunidades y opciones de las personas para que logren una calidad de vida acorde con lo que han soñado y esperado, por medio de la creación de capacidades” (Salas-Bourgoin, 2014), dichas capacidades Sen las definió como potenciación de habilidades para alcanzar un desarrollo autónomo, para hacer cosas, para existir o para actuar. 
+
+En relación con lo ya planteado el PNUD en 1992 dice que “el propósito básico del desarrollo humano es ampliar las opciones de las personas” y teóricamente tanto la medición del IDH como los Informes anuales que diagnostican y explican los distintos escenarios nacionales se recogen en dicho planteamiento. [@pnud1992]
+
+Sin embargo, el establecimiento de clasificaciones de países en clave de desarrollo (no de desarrollo humano) sigue determinando buena parte de las lecturas e interpretaciones que se hacen del IDH.
+
+## Distancia entre países 
+
+La función clasificatoria del IDH hace referencia a la agrupación de países en relación con los puntajes obtenidos en cada uno de los componentes del IDH. Es decir que el IDH posiciona que todo país con puntajes altos tiene mayor desarrollo humano que todo otro con puntajes bajos, omitiendo el proceso social dinámico y contextual que atraviesa no sólo el desarrollo humano, sino el desarrollo en sí mismo. 
+En ese sentido proponemos un sistema contextual de medición y monitoreo del desarrollo humano que ubique los países con estados de desarrollo similares sin asignar valores cuantitativos a mayor o menor nivel de desarrollo. 
+
+# Metodología
+
+Las herramientas metodológicas utilizadas son de índole cuantitativa. El avance respeto a la propuesta IDH consiste en dejar de lado el paradigma lineal univariado asumido usualmente por los indicadores sociales.
+
+## Tipo de estudio
+
+La propuesta tiene un alcance transversal retrospectivo, ampliable, mediante trabajo futuro a un acancce longitudinal retrospectivo.
+
+## Insumo
+
+El insumo del estudio está conformado por los datos recolectados por el United Nations Development Programme disponibles en [hdr.undp.org](http://hdr.undp.org/es/data). Se trata de una base de datos que contiene los indicadores propios del IDH: Expectativa de vida al nacer, GNI per capita y Escolaridad medidos sobre una muestra no probabilística conformada por 174 países.
+
+## Análisis propuesto
+
+La construcción de un sistema de distancias para la base de datos mencionada requiere de la selección de una distancia apropiada y de la implementación de algunas herramientas adecuadas visualización.
+
+Entérminos geométricos, la distancia usual, dnominada euclidiana, no es la única que existe para evaluar los registros de una base de datos; en particular, la distancia de Mahalanobis [@mahalanobis] retiene la estructura de correlación entre las variables dando valores más altos a elementos atípicos.
+
+El procedimiento t-SNE [@van2008visualizing] hace parte de una familia de herrramientas de minería de datos que tienen como función generar visualizaciónes de sistemas de distancias. En combinación con el paquéte gráfico `plotly` [@plotly], es posible realizar un gráfico interactivo que distribuye los países según sus distancias.
+
+Adicionalmente, el framework shiny [@shiny] permite construir una aplicación que muestra mediante mapas cuáles son los países más parecidos a un país dado.
+
+# Resultados
+
+## Datos
 
 Se obtienen los datos del IDH 2014. El Índice de Desarrollo Humano es calculado con el fin de realizar un ranking de los países. Sin embargo en este caso el objetivo es encontrar distancias entre los países a partir de los datos multivariados. Con esto esperamos crear mapas de similaridades, que nos muestren dónde estamos ubicados. El siguiente código obtiene los datos.
 
@@ -40,7 +89,6 @@ opts_chunk$set(echo = TRUE, include = TRUE, eval = TRUE, cache = FALSE, fig.widt
 
 ```
 
-
 ```{r}
 load("work_space.rda")
 
@@ -56,7 +104,7 @@ colmap(world.map, world.map@data, var ="IDH", map_id = "ADMIN") + scale_fill_con
 ## t-SNE
 
 ```{r, fig.width=10, fig.height=8}
-tsne_paises %>% set_colnames(c("xx", "yy")) %>% cbind(nombre_codigo) %>% ggplot + geom_text(mapping = aes(x = xx, y = yy, label = Nombre), size = 3) + theme_minimal() > tsne_plot
+tsne_paises %>% set_colnames(c("xx", "yy")) %>% cbind(nombre_codigo) %>% ggplot + geom_text(mapping = aes(x = xx, y = yy, label = Nombre), size = 3) + theme_minimal() -> tsne_plot
 
 ggplotly(tsne_plot)
 
@@ -79,3 +127,4 @@ colmap(map = world.map, data = distances, var = as.character(nombre_codigo$ISO3[
 
 ```
 
+# Referencias
