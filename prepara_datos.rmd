@@ -4,13 +4,24 @@ author: "Julián Cruz, Ana Gómez"
 output: html_document
 ---
 
+```{r}
+numerizar <- function(df, cuales){
+  
+  lapply(1:ncol(df), function(i){"if"(i %in% cuales, as.numeric(df[[i]]), as.character(df[[i]]))}) %>% data.frame(stringsAsFactors = FALSE) %>% setNames(names(df))
+  
+}
+
+```
+
+
+
 Este es el proceso de preparación de los datos
 
 ```{r}
 library("tsne")
 library("dplyr")
 library("magrittr")
-library("xlsx")
+library("readxl")
 library("maps")
 library("rworldmap")
 
@@ -31,18 +42,22 @@ if(!any(filename %in% dir())){curl_download(origin, downloaded.path)}
 
 # Código quemado, falta estandarizar
 
-downloaded.path %>% read.xlsx(sheetIndex = 1) %>%
-  setNames(LETTERS[1:ncol(.)]) -> HDI_2014_tmp
+downloaded.path %>% read_excel(sheet = 1, col_names = FALSE) -> HDI_2014_tmp
 
-rows <- c(1, which(!is.na(HDI_2014_tmp$A)))[-c(2, 3, 4, 5)]
+min(which(HDI_2014_tmp$X__1 == "1")) + 1 -> primera_fila
+
+downloaded.path %>% read_excel(sheet = 1, skip = primera_fila, col_names = FALSE) -> HDI_2014_tmp
+
+rows <- which(!is.na(HDI_2014_tmp$X__1))
+
+# cols <- which(!is.na(HDI_2014_tmp[rows[1],]))
+
 cols <- c(2, 3, 5, 7, 9, 11)
 
-downloaded.path %>% read.xlsx(sheetIndex = 1, rowIndex = rows, colIndex = cols,
-          header = TRUE) %>% 
-  setNames( c("Nombre", 
+HDI_2014_tmp %>% "["(rows, cols) %>% numerizar(c(2:6)) %>% setNames( c("Nombre", 
               "IDH",
            "Expectativa_de_vida_al_nacer", 
-           "Escoaridad_esperada", 
+           "Escolaridad_esperada", 
            "Escolaridad_media", 
            "GNI_per_capita")) -> HDI_2014
 ```
@@ -58,7 +73,7 @@ normalization.rule <- function(x){
 
 world.map <- joinCountryData2Map(HDI_2014, joinCode = "NAME", nameJoinColumn = "Nombre")
 
-world.map@data %$% data.frame(ISO3, ADMIN, Nombre, Expectativa_de_vida_al_nacer, Escoaridad_esperada, Escolaridad_media, GNI_per_capita) -> HDI_2014
+world.map@data %$% data.frame(ISO3, ADMIN, Nombre, Expectativa_de_vida_al_nacer, Escolaridad_esperada, Escolaridad_media, GNI_per_capita) -> HDI_2014
 
 # HDI_2014 %>% 
 #   sapply(function(x){sum(is.na(x))}) %>% ">"(20) %>% not -> temp1
@@ -98,7 +113,7 @@ HDI_WORK %>% apply(2, mean) -> medias
 
 apply(HDI_WORK, 1, function(pais){mahalanobis(HDI_WORK, pais, covarianzas)}) -> dis_mat
 
-dis_mat %>% as.data.frame %>% 
+dis_mat %>% log %>% as.data.frame %>% 
   mutate(nombre = as.character(nombre_codigo$Nombre), ADMIN = as.character(nombre_codigo$ADMIN)) -> distances
 
 ```
@@ -107,7 +122,7 @@ dis_mat %>% as.data.frame %>%
 
 ```{r, include = FALSE}
 
-dis_mat %>% tsne -> tsne_paises
+dis_mat %>% tsne %>% as.data.frame %>% set_colnames(c("xx", "yy")) -> tsne_paises
 
 tsne_paises %>% plot
 
