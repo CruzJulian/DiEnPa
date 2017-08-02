@@ -77,6 +77,7 @@ Adicionalmente, el framework shiny [@shiny] permite construir una aplicación qu
 Se obtienen los datos del IDH 2014. El Índice de Desarrollo Humano es calculado con el fin de realizar un ranking de los países. Sin embargo en este caso el objetivo es encontrar distancias entre los países a partir de los datos multivariados. Con esto esperamos crear mapas de similaridades, que nos muestren dónde estamos ubicados. El siguiente código obtiene los datos.
 
 ```{r}
+library("np")
 library("colmaps")
 library("ggplot2")
 library("dplyr")
@@ -84,8 +85,9 @@ library("magrittr")
 library("curl")
 library("knitr")
 library("plotly")
+library("gridExtra")
 
-opts_chunk$set(echo = TRUE, include = TRUE, eval = TRUE, cache = FALSE, fig.width = 7, fig.align = "center")
+opts_chunk$set(echo = TRUE, include = TRUE, eval = TRUE, cache = FALSE, fig.width = 10, fig.align = "center")
 
 ```
 
@@ -103,12 +105,55 @@ colmap(world.map, world.map@data, var ="IDH", map_id = "ADMIN") + scale_fill_con
 
 ## t-SNE
 
-```{r, fig.width=10, fig.height=8}
-tsne_paises %>% set_colnames(c("xx", "yy")) %>% cbind(nombre_codigo) %>% ggplot + geom_text(mapping = aes(x = xx, y = yy, label = Nombre), size = 3) + theme_minimal() -> tsne_plot
+```{r, fig.height=8}
+tsne_paises %>% cbind(nombre_codigo) %>% ggplot + geom_text(mapping = aes(x = xx, y = yy, label = Nombre), size = 6) + theme_minimal() -> tsne_plot
 
 ggplotly(tsne_plot)
 
 ```
+
+```{r}
+ajuste_no_parametrico <- function(tsne, dato, respuesta_nombre){
+  
+  tsne %>% lapply(range) %>% lapply(function(x){seq(x[1], x[2], length.out = 50)}) %>% expand.grid -> malla
+
+  # tsne %>% expand.grid %>% sample_n(100) -> malla
+  
+  npregbw(xdat = tsne, ydat = dato[[respuesta_nombre]], bwmethod = "cv.aic", regtype = "lc") -> np_bw
+  
+  npreg(bws = np_bw, exdat = malla) -> np_model
+  
+  malla %>% mutate(Valor = fitted(np_model)) -> surf_np
+  
+}
+
+```
+
+```{r, include = FALSE}
+names(HDI_WORK) %>% lapply(ajuste_no_parametrico, tsne = tsne_paises, dato = HDI_WORK) %>% Map(data.frame, ., Campo = names(HDI_WORK), stringsAsFactors = FALSE) -> no_par
+
+```
+
+```{r}
+HDI_WORK %>% Map(data.frame, Valor = ., Campo = names(HDI_WORK), stringsAsFactors = FALSE) %>% lapply(data.frame, tsne_paises, stringsAsFactors = FALSE) -> values
+
+```
+
+
+```{r, fig.height=8}
+values %>% lapply(function(i){
+  ggplot(i) + aes(x = xx, y = yy, colour = Valor) + geom_point(size = 3) + scale_colour_gradient(low = "red", high = "yellow") + labs(title = unique(i[["Campo"]])) + theme_minimal() 
+  }) %>% do.call(grid.arrange, .)
+
+```
+
+```{r, fig.height=8}
+no_par %>% lapply(function(i){
+  ggplot(i) + geom_raster(mapping = aes(x = xx, y = yy, fill = Valor)) + scale_fill_gradient(low = "red", high = "yellow") + labs(title = unique(i[["Campo"]])) + theme_minimal()
+  }) %>% do.call(grid.arrange, .)
+
+```
+
 
 ## Mapas
 
